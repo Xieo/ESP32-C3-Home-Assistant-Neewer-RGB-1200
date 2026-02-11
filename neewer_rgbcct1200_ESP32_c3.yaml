@@ -1,0 +1,67 @@
+esphome:
+  name: neewer-controller-rgbcct1200-c3
+  friendly_name: Neewer RGB CCT 1200 ESP32 C3
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+  - platform: esphome
+    password: "********************************************"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "ESPHome Neewer Fallback"
+    password: "12345678"
+
+captive_portal:
+
+external_components:
+  - source:
+      type: local
+      path: ./my_components
+    components: [neewer_component]
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+    interval: 1100ms
+    window: 1100ms
+
+ble_client:
+  - id: neewer_ble
+    mac_address: "ADD_YOUR_LIGHT_MAC_HERE"
+    on_connect:
+      then:
+        - logger.log: "BLE CLIENT CONNECTED TO NEEWER LIGHT"
+        - binary_sensor.template.publish:
+            id: neewer_ble_connected
+            state: ON
+    on_disconnect:
+      then:
+        - logger.log: "BLE CLIENT DISCONNECTED FROM NEEWER LIGHT"
+        - binary_sensor.template.publish:
+            id: neewer_ble_connected
+            state: OFF
+
+binary_sensor:
+  - platform: template
+    id: neewer_ble_connected
+    name: "Neewer Light Connected"
+    device_class: connectivity
+
+light:
+  - platform: neewer_component
+    id: neewer_light
+    name: "Neewer RGBCCT Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+    ble_client_id: neewer_ble
